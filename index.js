@@ -21,8 +21,12 @@ const exportControllers = function importsAndReturnController(model, options){
   const createOne = function createsNewDocument(req, res){
     let newDocument = new model();
     newDocument.preEdit(req.body, (err)=>{
-      if(err) return response.serverError(res, err);
+      if(err) return response.serverError(res, {}, err);
       newDocument.save((err)=>{
+        if(err){
+          if(err.code === 11000) return response.duplicated(res, err);
+          return response.serverError(res, {}, err);
+        }
         return response.ok(res, newDocument);
       });
     });
@@ -70,12 +74,16 @@ const exportControllers = function importsAndReturnController(model, options){
     });
   }
 
-  const deletOne = function deleteOneDocument(req, res){
-
+  const deleteOne = function deleteOneDocument(req, res){
+    let query= JSON.parse("{"+req.params.doc+"}");
+    let params = {query:query};
+    model.deleteOne(params, (err)=>{
+      if(err) return response.serverError(res, {}, err);
+      return response.ok(res);
+    });
   }
 
   const disableIt = function disableDocument(req, res){
-    console.log('holo');
     let query= JSON.parse("{"+req.params.doc+"}");
     let params = {query:query};
     model.load(params, (err, doc)=>{
@@ -93,6 +101,7 @@ const exportControllers = function importsAndReturnController(model, options){
    getOne,
    getAll,
    editOne,
+   deleteOne,
    disableIt
  }
 }
